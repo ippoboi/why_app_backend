@@ -24,8 +24,7 @@ async function bootstrap() {
     .setTitle('Why App API Documentation')
     .setDescription('Description of all REST requests of Why App API.')
     .setVersion('0.1')
-    .addTag('auth', 'Authentification management.')
-    .addTag('user', 'Operations about users.')
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
