@@ -98,6 +98,8 @@ export class AuthService {
 
       const tempCode = await this.getTempCode(user.email);
 
+      // TODO when app crashes, and you try to register again make sure to not block the user
+
       // TODO: change to use html + make a function that takes the user and tempCode
       await this.mailService.sendMail({
         to: user.email,
@@ -129,6 +131,10 @@ export class AuthService {
     );
     if (!user) {
       throw new UnauthorizedException('Invalid email');
+    }
+
+    if (user.verified) {
+      throw new BadRequestException('Email already verified');
     }
 
     const tokens = await this.generateTokens(user.userId);

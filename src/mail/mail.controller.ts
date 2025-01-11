@@ -1,11 +1,13 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { MailService } from './mail.service';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('mail')
 export class MailController {
   constructor(private mailService: MailService) {}
 
   @Post('test')
+  @UseGuards(AuthGuard('jwtAuth'))
   async testEmail(@Body() body: { email: string }) {
     await this.mailService.sendMail({
       to: body.email,

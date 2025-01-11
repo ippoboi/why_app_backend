@@ -12,7 +12,6 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
       return req.ip;
     }
 
-    console.log(`Rate limit attempt for email: ${email}`);
     return `email-${email}`; // Add prefix to avoid any potential conflicts
   }
 }

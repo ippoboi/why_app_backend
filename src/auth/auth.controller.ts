@@ -8,15 +8,15 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation } from '@nestjs/swagger';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login-body.dto';
 import { loginResDto } from './dto/login-res.dto';
 import { refreshResDto } from './dto/refresh-res.dto';
 import { RegisterBodyDto } from './dto/register-body.dto';
-import { VerifyEmailResDto } from './dto/verify-email-res.dto';
 import { VerifyEmailReqDto } from './dto/verify-email-req.dto';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { VerifyEmailResDto } from './dto/verify-email-res.dto';
 
 @Controller('auth')
 export class AuthController {
