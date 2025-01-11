@@ -13,6 +13,8 @@ import { LoginDto } from './dto/login-body.dto';
 import { loginResDto } from './dto/login-res.dto';
 import { refreshResDto } from './dto/refresh-res.dto';
 import { RegisterBodyDto } from './dto/register-body.dto';
+import { VerifyEmailResDto } from './dto/verify-email-res.dto';
+import { VerifyEmailReqDto } from './dto/verify-email-req.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -39,9 +41,21 @@ export class AuthController {
   })
   async register(
     @Body() registerBodyDto: RegisterBodyDto,
+  ): Promise<{ status: number; message: string }> {
+    return this.authService.register(registerBodyDto);
+  }
+
+  @Post('post/verify-email')
+  @ApiOperation({ summary: 'Verify email' })
+  @ApiOkResponse({
+    type: VerifyEmailResDto,
+    description: 'Successful verify email',
+  })
+  async verifyEmail(
+    @Body() verifyEmailReq: VerifyEmailReqDto,
     @Res({ passthrough: true }) response: Response,
-  ): Promise<loginResDto> {
-    return this.authService.register(registerBodyDto, response);
+  ): Promise<VerifyEmailResDto> {
+    return this.authService.confirmEmail(verifyEmailReq, response);
   }
 
   @Post('post/refresh')

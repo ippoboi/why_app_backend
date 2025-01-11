@@ -20,6 +20,7 @@ model User {
   fistBumps          FistBump[]
   notifyHour         Int              @default(8) 
   verified           Boolean          @default(false)
+  tempCodes          TempCode?
 
   @@index([userId])
 }
@@ -62,6 +63,17 @@ model FistBump {
   note        String
   user        User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
   userId      Int
+
+  @@index([userId])
+}
+
+model TempCode {
+  codeId      Int    @id @default(autoincrement())
+  code        String    @db.VarChar
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime 
+  user        User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  userId      Int       @unique
 
   @@index([userId])
 }

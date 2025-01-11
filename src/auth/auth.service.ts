@@ -1,4 +1,10 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { Response } from 'express';
@@ -7,12 +13,19 @@ import { LoginDto } from './dto/login-body.dto';
 import { loginResDto } from './dto/login-res.dto';
 import { refreshResDto } from './dto/refresh-res.dto';
 import { RegisterBodyDto } from './dto/register-body.dto';
+import { PrismaService } from 'src/prisma.service';
+import { Prisma } from '@prisma/client';
+import { MailService } from 'src/mail/mail.service';
+import { VerifyEmailResDto } from './dto/verify-email-res.dto';
+import { VerifyEmailReqDto } from './dto/verify-email-req.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private jwtService: JwtService,
     private usersService: UsersService,
+    private prisma: PrismaService,
+    private mailService: MailService,
   ) {}
 
   private readonly cookieOptions = {
@@ -75,15 +88,52 @@ export class AuthService {
 
   async register(
     registerBodyDto: RegisterBodyDto,
+  ): Promise<{ status: number; message: string }> {
+    try {
+      const user = await this.usersService.createUser({
+        email: registerBodyDto.email,
+        username: registerBodyDto.username,
+        password: this.hashPassword(registerBodyDto.password),
+      });
+
+      const tempCode = await this.getTempCode(user.email);
+
+      // TODO: change to use html + make a function that takes the user and tempCode
+      await this.mailService.sendMail({
+        to: user.email,
+        subject: 'Confirm your email',
+        text: `Your 6-digit code is ${tempCode}`,
+        html: `
+          <h1>Confirm your email</h1>
+          <p>Your 6-digit code is ${tempCode}</p>
+        `,
+      });
+
+      return { status: HttpStatus.OK, message: 'Mail sent successfully' };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          throw new HttpException('Email already in use', HttpStatus.FORBIDDEN);
+        }
+      }
+      throw error;
+    }
+  }
+
+  async confirmEmail(
+    verifyEmailReqDto: VerifyEmailReqDto,
     response: Response,
-  ): Promise<loginResDto> {
-    const user = await this.usersService.createUser({
-      email: registerBodyDto.email,
-      username: registerBodyDto.username,
-      password: this.hashPassword(registerBodyDto.password),
-    });
+  ): Promise<VerifyEmailResDto> {
+    const user = await this.usersService.getUserByEmail(
+      verifyEmailReqDto.email,
+    );
+    if (!user) {
+      throw new UnauthorizedException('Invalid email');
+    }
 
     const tokens = await this.generateTokens(user.userId);
+
+    await this.verifyTempCode(verifyEmailReqDto.code, user.userId);
 
     response.cookie('refresh_token', tokens.refresh_token, this.cookieOptions);
 
@@ -117,6 +167,62 @@ export class AuthService {
   async logout(response: Response) {
     response.clearCookie('refresh_token');
     return { message: 'Logged out successfully' };
+  }
+
+  // generate code
+  private generateCode(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  // get temp code
+  async getTempCode(email: string): Promise<string | undefined> {
+    const user = await this.usersService.getUserByEmail(email);
+    if (!user) {
+      throw new UnauthorizedException('Invalid email');
+    }
+
+    const code = this.generateCode();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+
+    await this.prisma.tempCode.upsert({
+      where: { userId: user.userId },
+      create: {
+        code: code,
+        expiresAt: expiresAt,
+        user: { connect: { userId: user.userId } },
+      },
+      update: {
+        code: code,
+        expiresAt: expiresAt,
+      },
+    });
+    return code;
+  }
+
+  // verify temp code
+  async verifyTempCode(code: string, userId: number) {
+    const tempCode = await this.prisma.tempCode.findFirst({
+      where: { code: code, userId: userId },
+    });
+
+    if (!tempCode) {
+      throw new BadRequestException('Invalid code');
+    }
+
+    if (tempCode.expiresAt < new Date()) {
+      throw new BadRequestException('Code expired');
+    }
+
+    await this.prisma.tempCode.delete({
+      where: { code: code, userId: userId },
+    });
+
+    await this.usersService.updateUser(userId, {
+      verified: true,
+    });
+
+    return { status: HttpStatus.OK, message: 'Code verified successfully' };
   }
 
   hashPassword(password: string): string {
