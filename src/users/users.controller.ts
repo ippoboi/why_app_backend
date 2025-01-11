@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Request, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiNotFoundResponse,
@@ -9,6 +9,7 @@ import {
 import { UserQueryDto } from './dto/user-query.dto';
 import { UsersService } from './users.service';
 import { AuthGuard } from '@nestjs/passport';
+import { UserResDto } from './dto/user-res.dto';
 
 @Controller('users')
 export class UsersController {
@@ -26,5 +27,12 @@ export class UsersController {
   })
   async getUsers() {
     return this.usersService.getUsers();
+  }
+
+  @Get('/get/me')
+  @UseGuards(AuthGuard('jwtAuth'))
+  async getMe(@Request() req): Promise<UserResDto> {
+    // The user object will be attached to the request by Passport
+    return req.user;
   }
 }

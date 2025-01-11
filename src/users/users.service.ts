@@ -11,8 +11,21 @@ export class UsersService {
     return this.prisma.user.findMany();
   }
 
-  async getUserById(id: string) {
-    return this.prisma.user.findUnique({ where: { userId: id } });
+  async getUserById(id: number) {
+    return this.prisma.user.findUnique({
+      where: { userId: id },
+      select: {
+        userId: true,
+        username: true,
+        email: true,
+        occupation: true,
+        createdAt: true,
+        whyStatements: true,
+        savedQuotes: true,
+        favoritePersonalities: true,
+        fistBumps: true,
+      },
+    });
   }
 
   async getUserByEmail(email: string) {
@@ -29,7 +42,7 @@ export class UsersService {
     });
   }
 
-  async updateUser(id: string, user: User) {
+  async updateUser(id: number, user: User) {
     return this.prisma.user.update({
       where: { userId: id },
       data: user,

@@ -33,7 +33,7 @@ export class AuthService {
   }
 
   async generateTokens(
-    userId: string,
+    userId: number,
   ): Promise<{ access_token: string; refresh_token: string }> {
     const [access_token, refresh_token] = await Promise.all([
       this.jwtService.signAsync(
