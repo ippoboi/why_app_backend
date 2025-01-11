@@ -57,13 +57,19 @@ export class UsersService {
     });
   }
 
+  async verifyUser(id: number) {
+    return this.prisma.user.update({
+      where: { userId: id },
+      data: { verified: true },
+    });
+  }
+
   async updateUser(id: number, user: Partial<User>) {
     await this.prisma.user.update({
       where: { userId: id },
       data: {
         username: user.username,
         occupation: user.occupation,
-        verified: user.verified,
         notifyHour: user.notifyHour,
       },
     });

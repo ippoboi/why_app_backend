@@ -263,9 +263,7 @@ export class AuthService {
       where: { code: code, userId: userId },
     });
 
-    await this.usersService.updateUser(userId, {
-      verified: true,
-    });
+    await this.usersService.verifyUser(userId);
 
     return { status: HttpStatus.OK, message: 'Code verified successfully' };
   }

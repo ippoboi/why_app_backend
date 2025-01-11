@@ -53,8 +53,7 @@ export class UsersController {
   @ApiUnauthorizedResponse({ description: 'No right to access ressource' })
   @ApiNotFoundResponse({ description: 'Data not found' })
   @ApiOkResponse({
-    type: UserResDto,
-    description: 'Successful retrieval',
+    description: 'Successful update',
   })
   async updateUser(@Request() req, @Body() body: UpdateUserDto) {
     return this.usersService.updateUser(req.user.userId, body);

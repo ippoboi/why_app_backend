@@ -9,6 +9,8 @@ import { MailModule } from './mail/mail.module';
 import { OnboardingModule } from './onboarding/onboarding.module';
 import { CustomThrottlerGuard } from './throttler/throttler.guard';
 import { UsersModule } from './users/users.module';
+import { WhyModule } from './why/why.module';
+import { QuoteModule } from './quote/quote.module';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { UsersModule } from './users/users.module';
         limit: 3, // 3 requests per ttl
       },
     ]),
+    WhyModule,
+    QuoteModule,
   ],
   controllers: [AppController],
   providers: [
