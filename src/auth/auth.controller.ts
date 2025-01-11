@@ -5,6 +5,7 @@ import {
   Req,
   Res,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { Request, Response } from 'express';
@@ -15,12 +16,14 @@ import { refreshResDto } from './dto/refresh-res.dto';
 import { RegisterBodyDto } from './dto/register-body.dto';
 import { VerifyEmailResDto } from './dto/verify-email-res.dto';
 import { VerifyEmailReqDto } from './dto/verify-email-req.dto';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('post/login')
+  @UseGuards(ThrottlerGuard)
   @ApiOperation({ summary: 'Login' })
   @ApiOkResponse({
     type: loginResDto,
@@ -34,6 +37,7 @@ export class AuthController {
   }
 
   @Post('post/register')
+  @UseGuards(ThrottlerGuard)
   @ApiOperation({ summary: 'Register' })
   @ApiOkResponse({
     type: loginResDto,
@@ -46,6 +50,7 @@ export class AuthController {
   }
 
   @Post('post/verify-email')
+  @UseGuards(ThrottlerGuard)
   @ApiOperation({ summary: 'Verify email' })
   @ApiOkResponse({
     type: VerifyEmailResDto,
@@ -56,6 +61,18 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ): Promise<VerifyEmailResDto> {
     return this.authService.confirmEmail(verifyEmailReq, response);
+  }
+
+  @Post('post/resend-code')
+  @UseGuards(ThrottlerGuard)
+  @ApiOperation({ summary: 'Resend verification Code' })
+  @ApiOkResponse({
+    description: 'Successful sent new code',
+  })
+  async resendCode(
+    @Body() body: { email: string },
+  ): Promise<{ status: number; message: string }> {
+    return this.authService.resendCode(body.email);
   }
 
   @Post('post/refresh')

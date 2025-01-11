@@ -29,7 +29,10 @@ export class UsersService {
   }
 
   async getUserByEmail(email: string) {
-    return this.prisma.user.findUnique({ where: { email } });
+    return this.prisma.user.findUnique({
+      where: { email },
+      include: { tempCodes: true },
+    });
   }
 
   async createUser(user: CreateUserDto) {

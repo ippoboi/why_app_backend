@@ -22,7 +22,7 @@ export class MailService {
   async sendMail({ to, subject, text, html }) {
     // Send mail with defined transport object
     const info = await this.transporter.sendMail({
-      from: '"Your App" <noreply@yourapp.com>',
+      from: '"Why App" <noreply@whyapp.com>',
       to,
       subject,
       text,

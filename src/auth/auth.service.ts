@@ -142,6 +142,32 @@ export class AuthService {
     };
   }
 
+  async resendCode(
+    email: string,
+  ): Promise<{ status: number; message: string }> {
+    const user = await this.usersService.getUserByEmail(email);
+    if (!user) {
+      throw new UnauthorizedException('Invalid email');
+    }
+
+    if (user.verified) {
+      throw new BadRequestException('Email already verified');
+    }
+
+    const tempCode = await this.getTempCode(user.email);
+
+    await this.mailService.sendMail({
+      to: email,
+      subject: 'Confirm your email',
+      text: `Your 6-digit code is ${tempCode}`,
+      html: `
+          <h1>Confirm your email</h1>
+          <p>Your 6-digit code is ${tempCode}</p>
+        `,
+    });
+    return { status: HttpStatus.OK, message: 'Code resent successfully' };
+  }
+
   async refreshTokens(
     refreshToken: string,
     response: Response,
@@ -185,18 +211,31 @@ export class AuthService {
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 15);
 
-    await this.prisma.tempCode.upsert({
+    // First find existing code
+    const existingCode = await this.prisma.tempCode.findFirst({
       where: { userId: user.userId },
-      create: {
-        code: code,
-        expiresAt: expiresAt,
-        user: { connect: { userId: user.userId } },
-      },
-      update: {
-        code: code,
-        expiresAt: expiresAt,
-      },
     });
+
+    if (existingCode) {
+      // Update existing code
+      await this.prisma.tempCode.update({
+        where: { codeId: existingCode.codeId },
+        data: {
+          code,
+          expiresAt,
+        },
+      });
+    } else {
+      // Create new code
+      await this.prisma.tempCode.create({
+        data: {
+          code,
+          expiresAt,
+          user: { connect: { userId: user.userId } },
+        },
+      });
+    }
+
     return code;
   }
 
@@ -214,7 +253,7 @@ export class AuthService {
       throw new BadRequestException('Code expired');
     }
 
-    await this.prisma.tempCode.delete({
+    await this.prisma.tempCode.deleteMany({
       where: { code: code, userId: userId },
     });
 
